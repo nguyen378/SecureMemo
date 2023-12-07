@@ -1,0 +1,19 @@
+<ContinuousCaptureLayout>:
+    orientation: 'vertical'
+
+    Label:
+        id: capture_label
+        text: 'Press "Start Capture" to begin capturing.'
+        size_hint_y: None
+        height: 44
+
+    Camera:
+        id: camera
+        resolution: (640, 480)
+        play: False
+        on_texture: root.detect_face(self, self.texture)
+
+    Button:
+        text: 'Start Capture'
+        size_hint: (None, None)
+        on_press: root.start_continuous_capture(self)
