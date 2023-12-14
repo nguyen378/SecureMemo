@@ -1,18 +1,22 @@
 import subprocess
-from os import path, mkdir
+from os import path, mkdir, listdir
 from shutil import rmtree
-from random import randint
+from random import randint, choice
 from datetime import datetime
 from cv2 import CascadeClassifier,VideoCapture, rectangle, resize, imwrite, waitKey, destroyWindow, imshow, putText, cvtColor, COLOR_YUV2BGR_NV21, COLOR_BGR2RGB, FONT_HERSHEY_SIMPLEX, LINE_AA, COLOR_RGBA2BGR
-from numpy import frombuffer, flip, uint8
+from numpy import frombuffer, flip, uint8, float32
+from keras.models import load_model
+from matplotlib.pyplot import imread
+from scipy.spatial import distance
 
 from kivy.animation import Animation
 from kivy.lang import Builder
 from kivy.utils import get_color_from_hex
 from kivy.graphics.texture import Texture
-from kivy.uix.camera import Camera
 from kivy.core.window import Window
 from kivy.clock import Clock
+from kivy.uix.camera import Camera
+from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 
 from task_add import PopContent
 from task_display import Card
@@ -29,7 +33,7 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
 from kivymd.uix.picker import MDTimePicker,MDDatePicker,MDThemePicker
 from kivymd.toast import toast
-
+import mycamera
 
 class SecureMemo(MDApp):
     condition=''
@@ -51,6 +55,7 @@ class SecureMemo(MDApp):
             items = menu_items,
             width_mult = 3,
         )
+        self.capture_counter = 0
        
     def build(self):
         self.theme_cls.primary_palette = "LightGreen"
@@ -463,120 +468,26 @@ class SecureMemo(MDApp):
             self.pass_confirm_dialog.open()
 
 
-    # class KivyCamera(Image):
-    #     screen_resolution = (544, 544)
-    #     if kivy.platform == 'android':
-    #         image_resolution = (544, 544)
-    #     else:
-    #         image_resolution = (540, 540)
-
-    #     source = ObjectProperty()
-    #     fps = NumericProperty(60)
-    #     counter = 0
-    #     debug = 0
-
-    #     def __init__(self, **kwargs):
-    #         super(KivyCamera, self).__init__(**kwargs)
-    #         self._capture = None
-    #         if self.source is not None:
-    #             self._capture = cv2.VideoCapture(self.source)
-
-    #         self.screen_resolution = Window.size
-    #         print(f'Screen size: {Window.size}, setting new screen resolution to: {self.screen_resolution}')
-
-    #         Clock.schedule_interval(self.update, 1.0 / self.fps)
-
-    #     def create_texture(self):
-    #         self.texture = Texture.create(size=self.screen_resolution, colorfmt='rgb')
-    #         self.texture_size = list(self.texture.size)
-    #         if self.debug:
-    #             print(f'Created GL texture with size: {self.texture_size}')
-
-    #     def on_source(self, *args):
-    #         if self._capture is not None:
-    #             self._capture.release()
-    #         self._capture = cv2.VideoCapture(self.source)
-
-    #     @property
-    #     def capture(self):
-    #         return self._capture
-
-    #     def update(self, dt):
-    #         ret, frame = self.capture.read()
-    #         if self.debug:
-    #             print(f'GL texture is {self.texture} - size: {self.texture_size}')
-    #         if ret:
-    #             self.create_texture()
-    #             if self.counter < 5:
-    #                 print(f'Showing frame: {frame.shape}')
-    #             self.frame_to_screen(frame)
-    #         else:
-    #             print(f'OpenCV failed to get frame: {int(ret)}')
-
-    #     def frame_to_screen(self, frame):
-    #         if kivy.platform == 'android':
-    #             frame_rgb = frame
-    #         else:
-    #             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    #         cv2.putText(frame_rgb, str(self.counter), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-    #         if self.counter == 0:
-    #             print(f'frame_rgb: {frame_rgb[:3]}')
-    #         self.counter += 1
-    #         flipped = np.flip(frame_rgb, 0)
-    #         if self.screen_resolution != self.image_resolution:
-    #             aspect_ratio = self.image_resolution[0] / self.image_resolution[1]
-    #             if self.counter < 5:
-    #                 print(f'{aspect_ratio = }')
-    #             flipped = cv2.resize(flipped, (int(self.screen_resolution[1]*aspect_ratio), self.screen_resolution[1]))	# I know, this one takes into account one case out of four or more (TODO)
-    #             self.screen_resolution = (int(self.screen_resolution[1]*aspect_ratio), self.screen_resolution[1])
-    #             if self.counter < 5:
-    #                 print(f'Screen resolution != image resolution with aspect ratio: {aspect_ratio}, setting new screen resolution to: {self.screen_resolution}')
-    #         buf = flipped.tostring()
-    #         self.texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
-
-    # class CamApp(App):
-    #     pass
-
-# class AndroidCamera(Camera):
-# 	camera_resolution = (640, 480)
-# 	counter = 0
-
-# 	def _camera_loaded(self, *largs):
-# 		self.texture = Texture.create(size=self.camera_resolution, colorfmt='rgb')
-# 		self.texture_size = list(self.texture.size)
-# 		print(f'Created GL texture with size: {self.texture_size}')
-
-# 	def on_tex(self, *l):
-# 		if self._camera._buffer is None:
-# 			return None
-# 		frame = self.frame_from_buf()
-# 		self.frame_to_screen(frame)
-# 		super(AndroidCamera, self).on_tex(*l)
-
-# 	def frame_from_buf(self):
-# 		w, h = self.resolution
-# 		frame = frombuffer(self._camera._buffer.tostring(), 'uint8').reshape((h + h // 2, w))	# TODO: try to understand why the frame size has nothing to do with the original resolution
-# 		print(f'{frame.shape = }')
-# 		frame_bgr = cvtColor(frame, COLOR_YUV2BGR_NV21)
-# 		return frame_bgr
-
-# 	def frame_to_screen(self, frame):
-# 		frame_rgb = cvtColor(frame, COLOR_BGR2RGB)
-# 		putText(frame_rgb, str(self.counter), (20, 50), FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, LINE_AA)
-# 		self.counter += 1
-# 		flipped = flip(frame_rgb, 0)
-# 		buf = flipped.tostring()
-# 		self.texture.blit_buffer(buf, colorfmt='rgb', bufferfmt='ubyte')
-
+ 
 
     def get_facial_data(self):                                      #Here
-        self.root.ids.screen_manager.current = 'getface'
+        check_pass = open('database_files\\password.txt', 'r')
+        self.checkpass_file = check_pass.read()
+        if self.checkpass_file == "":
+            toast("Your password has not been set")
+        else:
+            global face_path
+            face_path = path.join("database_files", "facial_dataset")
+            if not path.isdir(face_path):
+                mkdir(face_path)
+                self.root.ids.screen_manager.current = 'getface'
+            else:
+                self.root.ids.screen_manager.current = "change_face"
 
-    def start_continuous_capture(self):
-        self.root.ids.camera.play = not self.root.ids.camera.play
+
         
-    def start_continuous_capture(self, instance):
-        instance.text = 'Capturing...'
+    def start_continuous_capture(self):
+        self.root.ids.start_button.text = 'Capturing...'
         self.root.ids.capture_label.text = 'Capturing...'
         self.capture_images(30)
 
@@ -586,31 +497,99 @@ class SecureMemo(MDApp):
 
     def capture_frame(self):
         face_cascade = CascadeClassifier("database_files\\haarcascade_frontalface_default.xml")
-        check_pass = open('database_files\\password.txt', 'r')
-        self.checkpass_file = check_pass.read()
-        if self.checkpass_file == "":
-            toast("Your password has not been set")
-        else:
-            face_path = path.join("database_files", "facial_dataset")
-            if not path.isdir(face_path):
-                mkdir(face_path)
-                texture = self.root.ids.camera.texture
-                if texture:
-                    frame = frombuffer(texture.pixels, dtype=np.uint8).reshape((texture.height, texture.width, 4))
-                    img = cvtColor(frame, COLOR_RGBA2BGR)
-                    faces = face_cascade.detectMultiScale(img, 1.2, 5)
-                    for (x, y, w, h) in faces:
-                        imwrite('% s/% s.png' % (face_path, count), resize(face, (width, height)))
-                        rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                    
-                    print(f"Captured image {self.capture_counter}")
-                    self.capture_counter += 1
-                    self.capture_label.text = f'Captured {self.capture_counter}/{30} images.'
-            else:
-                self.root.ids.screen_manager.current = "change_face"
+        texture = self.root.ids.camera.texture
+        if texture:
+            (width, height) = (224, 224)
+            frame = frombuffer(texture.pixels, dtype=uint8).reshape((texture.height, texture.width, 4))
+            img = cvtColor(frame, COLOR_RGBA2BGR)
+            faces = face_cascade.detectMultiScale(img, 1.2, 5)
+            for (x, y, w, h) in faces:
+                face = img[y:y + h, x:x + w]
+                imwrite('% s/% s.png' % (face_path, self.capture_counter), resize(face, (width, height)))
+                rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            
+            print(f"Captured image {self.capture_counter}")
+            self.capture_counter += 1
+            self.root.ids.capture_label.text = f'Captured {self.capture_counter}/{30} images.'
                 
+    def exit_get_face(self):                    #exit screen getface
+        self.capture_counter = 1
+        self.root.ids.screen_manager.current = 'settings'
+    
+    def check_camera(self):
         
+        if self.root.ids.screen_manager.current == "getface":
+            self.root.ids.camera.start_camera()
+    
+    def change_to_face_recog(self):
+        self.root.ids.screen_manager.current = "face_recognition"
+        
+    def preprocess(self,img1,img2):
+        img1 = resize(img1,(224,224))
+        img1.astype(float32)/255.
 
+        img2 = resize(img2,(224,224))
+        img2.astype(float32)/255.
+
+        img1 = img1.reshape(-1,224,224,3)
+        img2 = img2.reshape(-1,224,224,3)
+        return img1,img2
+    
+    def get_random_image(self, face_path):
+        # Kiểm tra xem đường dẫn có tồn tại không
+        if not path.exists(face_path):
+            print(f"Đường dẫn '{face_path}' không tồn tại.")
+            return None
+
+        # Lấy danh sách tất cả các tệp hình ảnh trong thư mục
+        image_files = [f for f in listdir(face_path) if f.endswith(('.jpg', '.jpeg', '.png'))]
+
+        # Kiểm tra xem có hình ảnh nào không
+        if not image_files:
+            print(f"Không tìm thấy hình ảnh trong '{face_path}'.")
+            return None
+
+        # Chọn ngẫu nhiên một tệp hình ảnh từ danh sách
+        random_image = choice(image_files)
+
+        # Tạo đường dẫn đầy đủ đến tệp hình ảnh ngẫu nhiên
+        full_path = path.join(face_path, random_image)
+
+        return full_path
+    
+    def face_recognition(self):
+        face_cascade = CascadeClassifier("database_files\\haarcascade_frontalface_default.xml")
+        inference_model = load_model("model\\inference_model.h5")
+        face_path = path.join("database_files", "facial_dataset")
+        img1_path = self.get_random_image(face_path)
+        if img1_path is None:
+            self.root.ids.screen_manager.current = "settings"
+            toast("No face set!")
+        else:
+            img1 = imread(img1_path)
+            img2 = self.root.ids.face_camera.texture
+            
+            if img2:
+                (width, height) = (224, 224)
+                frame = frombuffer(img2.pixels, dtype=uint8).reshape((img2.height, img2.width, 4))
+                img = cvtColor(frame, COLOR_RGBA2BGR)
+                faces = face_cascade.detectMultiScale(img, 1.2, 5)
+                if len(faces) > 0:
+                    (x, y, w, h) = faces[0]  # Lấy vị trí của khuôn mặt đầu tiên trong danh sách
+                    face = img[y:y + h, x:x + w]
+                    
+            img1,img2 = self.preprocess(img1,face)
+
+            x1,x2 = inference_model.predict((img1,img2))
+            x1 = x1.reshape(-1)
+            x2 = x2.reshape(-1)
+            dist = distance.cosine(x1, x2)
+            if(dist<0.3):
+                self.root.ids.screen_manager.current = "scr 2"
+            else:
+                print("Not match")
+    
+    
     def remove_facial_data(self):
         if not path.exists("database_files\\facial_dataset"):
             self.root.ids.screen_manager.current = "settings"
@@ -746,6 +725,7 @@ class SecureMemo(MDApp):
 
     def dele8(self, *args):
         self.root.ids['box2'].remove_widget(self.target3)
+
 
 if __name__=='__main__':       
     app=SecureMemo()

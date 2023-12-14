@@ -8,7 +8,7 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.lang import Builder
 
-Builder.load_file('F:\Project\MajorProject\SecureMemo\SecureMemo\kv_files\continuous_capture.kv')
+Builder.load_file('kv_files\\continuous_capture.kv')
 
 class ContinuousCaptureLayout(BoxLayout):
     def detect_face(self, instance, texture):

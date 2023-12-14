@@ -108,13 +108,14 @@ Screen:
                             size_hint_x: 0.6  
 
                         MDRoundFlatButton:      #Here
-                            on_press: app.unhide() 
+                            on_press: app.change_to_face_recog() 
                             size_hint_x: 0.4  
                             md_bg_color: 1, 1, 1, 0  # Màu nền là màu trong suốt
                             line_color: 0, 0, 0, 0  # Màu viền là màu trong suốt
                             Image:
                                 source: "image_files\\set_face.png"
                                 #pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                            
 
 
                     Widget:
@@ -399,25 +400,67 @@ Screen:
                     on_release:app.opennotes()
 
             Screen:
-
                 name: "getface"
-                
-                Label:
-                    id: capture_label
-                    text: 'Press "Start Capture" to begin capturing.'
-                    size_hint_y: None
-                    height: 44
 
-                Camera:
-                    id: camera
-                    resolution: (640, 480)
-                    play: False
+                MDBoxLayout:
+                    orientation: 'vertical'
+                    padding: [10,100,10,10]
+                    MDLabel:
+                        id: capture_label
+                        text: 'Press "Start Capture" to begin capturing.'
+                        size_hint_y: None
+                        height: "44dp"
+
+                    MyCamera:
+                        id: camera
+                        resolution: (640, 480)
+                        play: True
+
+                    MDBoxLayout:
+                        orientation: 'horizontal'
+
+                        MDRaisedButton:
+                            id: start_button
+                            text: 'Start Capture'
+                            size_hint: (None, None)
+                            size: ("200dp", "50dp")
+                            on_release: app.start_continuous_capture()
+
+                        MDRaisedButton:
+                            text: 'Exit'
+                            size_hint: (None, None)
+                            size: ("200dp", "50dp")
+                            on_release: app.exit_get_face()
+                            
+            Screen:
+                name: "face_recognition"
+
+                MDBoxLayout:
+                    orientation: 'vertical'
+
+                    MDLabel:
+                        text: 'Face Recognition'
+                        font_style: 'H4'
+                        halign: 'center'
+
+                    MyCamera:
+                        id: face_camera
+                        resolution: (640, 480)
+                        play: True
                     
+                    MDRaisedButton:
+                        text: 'Start Face Recognition'
+                        size_hint: (None, None)
+                        size: ("200dp", "50dp")
+                        pos_hint: {'center_x': 0.5}
+                        on_press: app.face_recognition()
+                    MDRaisedButton:
+                        text: 'Back to Home'
+                        size_hint: (None, None)
+                        size: ("200dp", "50dp")
+                        pos_hint: {'center_x': 0.5}
+                        on_press: app.root.current = 'scr 1'
 
-                Button:
-                    text: 'Start Capture'
-                    size_hint: (0.5, 0.1)
-                    on_press: app.start_continuous_capture()
 
             Screen:
                 
