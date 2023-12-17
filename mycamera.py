@@ -2,8 +2,9 @@ from kivy.uix.image import Image
 from kivy.core.camera import Camera as CoreCamera
 from kivy.properties import NumericProperty, ListProperty, BooleanProperty
 
+
 # access to camera
-core_camera = CoreCamera(index=0, resolution=(640, 480), stopped=True)
+core_camera = CoreCamera(index=0, resolution=(1280,1280), stopped=True)
 
 # Widget to display camera
 class MyCamera(Image):

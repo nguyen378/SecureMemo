@@ -405,20 +405,21 @@ Screen:
                 MDBoxLayout:
                     orientation: 'vertical'
                     padding: [10,100,10,10]
-                    MDLabel:
-                        id: capture_label
-                        text: 'Press "Start Capture" to begin capturing.'
-                        size_hint_y: None
-                        height: "44dp"
 
                     MyCamera:
                         id: camera
                         resolution: (640, 480)
                         play: True
 
+                    MDLabel:
+                        id: capture_label
+                        text: 'Press "Start Capture" to begin capturing.'
+                        size_hint_y: None
+                        height: "44dp"
+                        halign: 'center'
                     MDBoxLayout:
                         orientation: 'horizontal'
-
+                        halign: 'center'
                         MDRaisedButton:
                             id: start_button
                             text: 'Start Capture'
@@ -437,12 +438,6 @@ Screen:
 
                 MDBoxLayout:
                     orientation: 'vertical'
-
-                    MDLabel:
-                        text: 'Face Recognition'
-                        font_style: 'H4'
-                        halign: 'center'
-
                     MyCamera:
                         id: face_camera
                         resolution: (640, 480)
@@ -454,6 +449,7 @@ Screen:
                         size: ("200dp", "50dp")
                         pos_hint: {'center_x': 0.5}
                         on_press: app.face_recognition()
+
                     MDRaisedButton:
                         text: 'Back to Home'
                         size_hint: (None, None)

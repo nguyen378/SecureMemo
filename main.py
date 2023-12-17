@@ -6,7 +6,7 @@ from datetime import datetime
 from cv2 import CascadeClassifier,VideoCapture, rectangle, resize, imwrite, waitKey, destroyWindow, imshow, putText, cvtColor, COLOR_YUV2BGR_NV21, COLOR_BGR2RGB, FONT_HERSHEY_SIMPLEX, LINE_AA, COLOR_RGBA2BGR
 from numpy import frombuffer, flip, uint8, float32
 from keras.models import load_model
-from matplotlib.pyplot import imread
+from matplotlib.pyplot import imread, imsave
 from scipy.spatial import distance
 
 from kivy.animation import Animation
@@ -481,6 +481,7 @@ class SecureMemo(MDApp):
             if not path.isdir(face_path):
                 mkdir(face_path)
                 self.root.ids.screen_manager.current = 'getface'
+                self.start_continuous_capture()
             else:
                 self.root.ids.screen_manager.current = "change_face"
 
@@ -568,6 +569,7 @@ class SecureMemo(MDApp):
         else:
             img1 = imread(img1_path)
             img2 = self.root.ids.face_camera.texture
+            imsave('F:\Project\MajorProject\SecureMemo\SecureMemo\database_files\\facial_recognition\\face.png',img1)
             
             if img2:
                 (width, height) = (224, 224)
@@ -577,17 +579,19 @@ class SecureMemo(MDApp):
                 if len(faces) > 0:
                     (x, y, w, h) = faces[0]  # Lấy vị trí của khuôn mặt đầu tiên trong danh sách
                     face = img[y:y + h, x:x + w]
-                    
-            img1,img2 = self.preprocess(img1,face)
+                    imwrite('% s/% s.png' % ('F:\Project\MajorProject\SecureMemo\SecureMemo\database_files\\facial_recognition', 'face1'), resize(face, (width, height)))
+            img2 = imread('F:\Project\MajorProject\SecureMemo\SecureMemo\database_files\\facial_recognition\\face1.png')
+            img1,img2 = self.preprocess(img1,img2)
 
             x1,x2 = inference_model.predict((img1,img2))
             x1 = x1.reshape(-1)
             x2 = x2.reshape(-1)
             dist = distance.cosine(x1, x2)
             if(dist<0.3):
+                print("Match",dist)
                 self.root.ids.screen_manager.current = "scr 2"
             else:
-                print("Not match")
+                print("Not match",dist)
     
     
     def remove_facial_data(self):
